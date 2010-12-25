@@ -2,4 +2,6 @@
 <resources>
     <string name="hello">Hello World, MainActivity!</string>
     <string name="app_name">gotochi app</string>
+<string name="main_btnAmbition_text">野望</string>
+<string name="ambition">夢は大きく世界征服！！</string>
 </resources>
