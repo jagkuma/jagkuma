@@ -14,6 +14,9 @@
         </activity>
         
         <service android:name="JudgmentLocalLocationService"></service>
+<receiver android:name="RootBroadcastReceiver"><intent-filter><action android:name="jag.kumamoto.apps.gotochi.LOCATION_CHANGE"></action>
+</intent-filter>
+</receiver>
 </application>
     <uses-sdk android:minSdkVersion="4" />
 

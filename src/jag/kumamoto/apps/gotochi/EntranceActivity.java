@@ -14,12 +14,6 @@ import android.os.RemoteException;
 
 public class EntranceActivity extends Activity{
 	
-	/**
-	 * 移動によって他県に移動したときに発行されるインテントに付属するアクション
-	 * これは位置判定サービスによって発行される。
-	 */
-	public static final String LOCATION_CHANGE_ACTION = "jag.kumamoto.apps.gotochi.LOCATION_CHANGE";
-	
 	private IJudgmentLocalLocationService mLocationService = null;
 	
 	private final class JudgmentLocalLocationServiceConnection implements ServiceConnection {
