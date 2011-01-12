@@ -9,11 +9,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-public class EntranceActivity extends Activity{
+public class PrefecturesActivityBase extends Activity{
+	
+	private static final String EntranceActivityPackageName = "jag.kumamoto.apps.gotochi";
+	private static final String EntranceActivityClassName = "jag.kumamoto.apps.gotochi.EntranceActivity";
+	private static final String JudgmentLocalLocationServicePackageName = "jag.kumamoto.apps.gotochi";
+	private static final String JudgmentLocalLocationServiceClassName =
+		"jag.kumamoto.apps.gotochi.JudgmentLocalLocationService";
 	
 	private IJudgmentLocalLocationService mLocationService = null;
 	
@@ -52,12 +57,6 @@ public class EntranceActivity extends Activity{
 		}
 	}
     private final JudgmentLocalLocationServiceConnection mConnection = new JudgmentLocalLocationServiceConnection();
-    
-    @Override protected void onCreate(Bundle savedInstanceState) {
-    	super.onCreate(savedInstanceState);
-    	
-    	startActivity(new Intent(this, MainActivity.class));
-    }
 	
 	@Override protected void onStart() {
 		super.onStart();
@@ -67,16 +66,21 @@ public class EntranceActivity extends Activity{
 				//サービスは一時停止中の可能性があるので
 				//コネクション設立後確認するためのフラグを立てておく
 				mConnection.setConnectedProcessRestart();
+				Intent intent = new Intent();
+				intent.setClassName(JudgmentLocalLocationServicePackageName,
+						JudgmentLocalLocationServiceClassName);
 				
-				bindService(new Intent(this, JudgmentLocalLocationService.class), mConnection, 0);
+				bindService(intent, mConnection, 0);
 			} else {
+				
 				restartLocationJudgmentService();
 			}
 		} else {
 			startLocationJudgmentService();
 		}
+		
 	}
-
+	
 	/**
 	 * 位置判定サービスが起動中かどうかを調べる
 	 * @return 起動中であればtrue.起動していなければfalse
@@ -86,9 +90,8 @@ public class EntranceActivity extends Activity{
         List<ActivityManager.RunningServiceInfo> serviceInfos = am.getRunningServices(Integer.MAX_VALUE);
         
         int size = serviceInfos.size();
-        String serviceName = JudgmentLocalLocationService.class.getName();
         for (int i=0; i<size; ++i){
-            if (serviceInfos.get(i).service.getClassName().equals(serviceName)) {
+            if (serviceInfos.get(i).service.getClassName().equals(JudgmentLocalLocationServiceClassName)) {
                 return true;
             }
         }
@@ -104,7 +107,7 @@ public class EntranceActivity extends Activity{
     		//位置判定サービスを一時停止する
     		pauseLocationJudgmentService();
     	}
-    }    
+    }
     
    //この実装少し不安。別の案を考えたほうがいいかも 
     /**
@@ -112,9 +115,11 @@ public class EntranceActivity extends Activity{
      * @return トップにあるならtrue.隠れている場合はfalse
      */
     private boolean isTopSelfApps() {
+    	
     	ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
     	for(RunningTaskInfo info : am.getRunningTasks(1)) {
-    		return getComponentName().compareTo(info.baseActivity) == 0;
+    		return info.baseActivity.getClassName().equals(EntranceActivityClassName) && 
+    			info.baseActivity.getPackageName().equals(EntranceActivityPackageName);
     	}
     	
     	return false;
@@ -123,12 +128,11 @@ public class EntranceActivity extends Activity{
     @Override protected void onDestroy() {
 		mLocationService = null;
 		unbindService(mConnection);
-    	
-    	//super.onDestroy()呼び出しよりも先に呼び出すほうがベター
-    	if(isFinishSelfApps()) {
-    		stopLocationJudgmentService();
-    	}
-    	
+		
+		if(isFinishSelfApps()) {
+			stopLocationJudgmentService();
+		}
+		
     	super.onDestroy();
     }
     
@@ -145,16 +149,22 @@ public class EntranceActivity extends Activity{
     	//実行中のタスク一覧になければ終了している
     	return true;
     }
-	
     
 	private void startLocationJudgmentService() {
-		Intent intent = new Intent(this, JudgmentLocalLocationService.class);
+		Intent intent = new Intent();
+		intent.setClassName(JudgmentLocalLocationServicePackageName,
+				JudgmentLocalLocationServiceClassName);
 		startService(intent);
+		
 		bindService(intent, mConnection, 0);
 	}
 	
 	private void stopLocationJudgmentService() {
-		stopService(new Intent(this, JudgmentLocalLocationService.class));
+		Intent intent = new Intent();
+		intent.setClassName(JudgmentLocalLocationServicePackageName,
+				JudgmentLocalLocationServiceClassName);
+		
+		stopService(intent);
 	}
 	
 	private void pauseLocationJudgmentService() {
@@ -166,8 +176,8 @@ public class EntranceActivity extends Activity{
 				e.printStackTrace();
 			}
 		} else {
-			//まだサービスとコネクションできていないので、
-			//コネクション設立後にすぐポーズをするように
+			//まだサービスとコネクション設立できていないので、
+			//コネクション設立後にすぐポーズをするようにフラグをセット
 			mConnection.setConnectedProcessPause();
 		}
 		
@@ -183,5 +193,6 @@ public class EntranceActivity extends Activity{
 			e.printStackTrace();
 		}
 	}
+		
     
 }
