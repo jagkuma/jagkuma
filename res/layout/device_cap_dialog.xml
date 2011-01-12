@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	>
+	
+	<TextView
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="@string/device_cap_dialog_msg"
+		android:textSize="16sp"
+		/>
+		
+	<TextView android:id="@+id_device_cap/tvwMessage"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="5dip"
+		android:textSize="17sp"
+		/>
+		
+	<FrameLayout
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		>
+		<Button android:id="@+id_device_cap/btnSettings"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center_horizontal"
+			android:minWidth="80dip"
+			android:text="@string/common_settings"
+			/>
+	</FrameLayout>
+	
+</LinearLayout>
