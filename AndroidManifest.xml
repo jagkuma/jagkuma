@@ -13,12 +13,12 @@
             </intent-filter>
         </activity>
         
-        <service android:name="JudgmentLocalLocationService"></service>
+        <service android:name="GotochiService"></service>
+
+<activity android:name="ServiceShowWarningActivity" android:theme="@style/ServiceShowWarning"></activity>
 <receiver android:name="RootBroadcastReceiver"><intent-filter><action android:name="jag.kumamoto.apps.gotochi.LOCATION_CHANGE"></action>
 </intent-filter>
 </receiver>
-
-<activity android:name="ServiceShowWarningActivity" android:theme="@style/ServiceShowWarning"></activity>
 </application>
     <uses-sdk android:minSdkVersion="4" />
 

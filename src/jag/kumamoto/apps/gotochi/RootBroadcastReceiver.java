@@ -27,8 +27,6 @@ public class RootBroadcastReceiver extends BroadcastReceiver{
 		
 		if(intent.getAction().equals(LOCATION_CHANGE_ACTION)) {
 			PrefecturesCode pref = (PrefecturesCode) intent.getSerializableExtra(CURRENT_LOCATION);
-			
-			//TODO PrefecturesCodeを利用してActivityを切り替える
 		}
 	}
 

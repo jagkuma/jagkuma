@@ -9,15 +9,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 
 public class EntranceActivity extends Activity{
 	
-	private IJudgmentLocalLocationService mLocationService = null;
+	private IGotochiService mGotochiService = null;
 	
-	private final class JudgmentLocalLocationServiceConnection implements ServiceConnection {
+	private final class GotochiServiceConnection implements ServiceConnection {
 		private static final int CONNECTED_PROCESS_NONE = 0;
 		private static final int CONNECTED_PROCESS_RESTART = 1;
 		private static final int CONNECTED_PROCESS_PAUSE = 2;
@@ -36,44 +35,38 @@ public class EntranceActivity extends Activity{
 		}
 		
 		@Override public void onServiceConnected(ComponentName name, IBinder service) {
-			mLocationService = IJudgmentLocalLocationService.Stub.asInterface(service);
+			mGotochiService = IGotochiService.Stub.asInterface(service);
 			
 			int process = mConnectedProcess;
 			mConnectedProcess = CONNECTED_PROCESS_NONE;
 			
 			switch(process) {
 			case CONNECTED_PROCESS_PAUSE:
-				pauseLocationJudgmentService();
+				pauseGotochiService();
 				break;
 			case CONNECTED_PROCESS_RESTART:
-				restartLocationJudgmentService();
+				restartGotochiService();
 				break;
 			}
 		}
 	}
-    private final JudgmentLocalLocationServiceConnection mConnection = new JudgmentLocalLocationServiceConnection();
+    private final GotochiServiceConnection mConnection = new GotochiServiceConnection();
     
-    @Override protected void onCreate(Bundle savedInstanceState) {
-    	super.onCreate(savedInstanceState);
-    	
-    	startActivity(new Intent(this, MainActivity.class));
-    }
-	
 	@Override protected void onStart() {
 		super.onStart();
 		
 		if(isServiceRunning()) {
-			if(mLocationService == null) {
+			if(mGotochiService == null) {
 				//サービスは一時停止中の可能性があるので
 				//コネクション設立後確認するためのフラグを立てておく
 				mConnection.setConnectedProcessRestart();
 				
-				bindService(new Intent(this, JudgmentLocalLocationService.class), mConnection, 0);
+				bindService(new Intent(this, GotochiService.class), mConnection, 0);
 			} else {
-				restartLocationJudgmentService();
+				restartGotochiService();
 			}
 		} else {
-			startLocationJudgmentService();
+			startGotochiService();
 		}
 	}
 
@@ -86,7 +79,7 @@ public class EntranceActivity extends Activity{
         List<ActivityManager.RunningServiceInfo> serviceInfos = am.getRunningServices(Integer.MAX_VALUE);
         
         int size = serviceInfos.size();
-        String serviceName = JudgmentLocalLocationService.class.getName();
+        String serviceName = GotochiService.class.getName();
         for (int i=0; i<size; ++i){
             if (serviceInfos.get(i).service.getClassName().equals(serviceName)) {
                 return true;
@@ -102,7 +95,7 @@ public class EntranceActivity extends Activity{
     	if(!isTopSelfApps()) {
     		//ご当地アプリ以外が表示されている場合は
     		//位置判定サービスを一時停止する
-    		pauseLocationJudgmentService();
+    		pauseGotochiService();
     	}
     }    
     
@@ -121,12 +114,12 @@ public class EntranceActivity extends Activity{
     }
     
     @Override protected void onDestroy() {
-		mLocationService = null;
+		mGotochiService = null;
 		unbindService(mConnection);
     	
     	//super.onDestroy()呼び出しよりも先に呼び出すほうがベター
     	if(isFinishSelfApps()) {
-    		stopLocationJudgmentService();
+    		stopGotochiService();
     	}
     	
     	super.onDestroy();
@@ -147,20 +140,20 @@ public class EntranceActivity extends Activity{
     }
 	
     
-	private void startLocationJudgmentService() {
-		Intent intent = new Intent(this, JudgmentLocalLocationService.class);
+	private void startGotochiService() {
+		Intent intent = new Intent(this, GotochiService.class);
 		startService(intent);
 		bindService(intent, mConnection, 0);
 	}
 	
-	private void stopLocationJudgmentService() {
-		stopService(new Intent(this, JudgmentLocalLocationService.class));
+	private void stopGotochiService() {
+		stopService(new Intent(this, GotochiService.class));
 	}
 	
-	private void pauseLocationJudgmentService() {
-		if(mLocationService != null) {
+	private void pauseGotochiService() {
+		if(mGotochiService != null) {
 			try {
-				mLocationService.pause();
+				mGotochiService.pause();
 			}catch(RemoteException e) {
 				//TODO どうしよう。再起動かな
 				e.printStackTrace();
@@ -173,10 +166,10 @@ public class EntranceActivity extends Activity{
 		
 	}
 	
-	private void restartLocationJudgmentService() {
+	private void restartGotochiService() {
 		try {
-			if(!mLocationService.isRunning()) {
-				mLocationService.restart();
+			if(!mGotochiService.isRunning()) {
+				mGotochiService.restart();
 			}
 		}catch(RemoteException e) {
 			//TODO どうしよう 再起動かな

@@ -5,24 +5,31 @@ import java.util.List;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningTaskInfo;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-public class PrefecturesActivityBase extends Activity{
+/**
+ * 各都道府県のActivityを実装するときに、普通のActivityクラスの代わりにベースクラスにするActivity。
+ * 位置判断サービスとの接続などの処理を行う。
+ * @author aharisu
+ *
+ */
+public abstract class PrefecturesActivityBase extends Activity{
 	
-	private static final String EntranceActivityPackageName = "jag.kumamoto.apps.gotochi";
-	private static final String EntranceActivityClassName = "jag.kumamoto.apps.gotochi.EntranceActivity";
-	private static final String JudgmentLocalLocationServicePackageName = "jag.kumamoto.apps.gotochi";
-	private static final String JudgmentLocalLocationServiceClassName =
-		"jag.kumamoto.apps.gotochi.JudgmentLocalLocationService";
+	private static final String ENTRANCE_ACTIVITY_PACKAGE_NAME = "jag.kumamoto.apps.gotochi";
+	private static final String ENTRANCE_ACTIVITY_CLASS_NAME = "jag.kumamoto.apps.gotochi.EntranceActivity";
+	private static final String GOTOCHI_SERVICE_PACKAGE_NAME = "jag.kumamoto.apps.gotochi";
+	private static final String GOTOCHI_SERVICE_CLASS_NAME = "jag.kumamoto.apps.gotochi.GotochiService";
 	
-	private IJudgmentLocalLocationService mLocationService = null;
+	private IGotochiService mGotochiService = null;
 	
-	private final class JudgmentLocalLocationServiceConnection implements ServiceConnection {
+	private final class GotochiServiceConnection implements ServiceConnection {
 		private static final int CONNECTED_PROCESS_NONE = 0;
 		private static final int CONNECTED_PROCESS_RESTART = 1;
 		private static final int CONNECTED_PROCESS_PAUSE = 2;
@@ -41,42 +48,56 @@ public class PrefecturesActivityBase extends Activity{
 		}
 		
 		@Override public void onServiceConnected(ComponentName name, IBinder service) {
-			mLocationService = IJudgmentLocalLocationService.Stub.asInterface(service);
+			mGotochiService = IGotochiService.Stub.asInterface(service);
 			
 			int process = mConnectedProcess;
 			mConnectedProcess = CONNECTED_PROCESS_NONE;
 			
 			switch(process) {
 			case CONNECTED_PROCESS_PAUSE:
-				pauseLocationJudgmentService();
+				pauseGotochiService();
 				break;
 			case CONNECTED_PROCESS_RESTART:
-				restartLocationJudgmentService();
+				restartGotochiService();
 				break;
 			}
+			
+			onServiceBind();
 		}
 	}
-    private final JudgmentLocalLocationServiceConnection mConnection = new JudgmentLocalLocationServiceConnection();
-	
+    private final GotochiServiceConnection mConnection = new GotochiServiceConnection();
+    
+    
+    private boolean mReceiverRegisterd = false;
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+		
+		@Override public void onReceive(Context context, Intent intent) {
+			if(intent.getAction().equals(RootBroadcastReceiver.LOCATION_CHANGE_ACTION)) {
+				//アクティビティを終了させる
+				finish();
+			}
+		}
+	};
+    
 	@Override protected void onStart() {
 		super.onStart();
 		
 		if(isServiceRunning()) {
-			if(mLocationService == null) {
+			if(mGotochiService == null) {
 				//サービスは一時停止中の可能性があるので
 				//コネクション設立後確認するためのフラグを立てておく
 				mConnection.setConnectedProcessRestart();
 				Intent intent = new Intent();
-				intent.setClassName(JudgmentLocalLocationServicePackageName,
-						JudgmentLocalLocationServiceClassName);
+				intent.setClassName(GOTOCHI_SERVICE_PACKAGE_NAME,
+						GOTOCHI_SERVICE_CLASS_NAME);
 				
 				bindService(intent, mConnection, 0);
 			} else {
 				
-				restartLocationJudgmentService();
+				restartGotochiService();
 			}
 		} else {
-			startLocationJudgmentService();
+			startGotochiService();
 		}
 		
 	}
@@ -91,7 +112,7 @@ public class PrefecturesActivityBase extends Activity{
         
         int size = serviceInfos.size();
         for (int i=0; i<size; ++i){
-            if (serviceInfos.get(i).service.getClassName().equals(JudgmentLocalLocationServiceClassName)) {
+            if (serviceInfos.get(i).service.getClassName().equals(GOTOCHI_SERVICE_CLASS_NAME)) {
                 return true;
             }
         }
@@ -105,9 +126,10 @@ public class PrefecturesActivityBase extends Activity{
     	if(!isTopSelfApps()) {
     		//ご当地アプリ以外が表示されている場合は
     		//位置判定サービスを一時停止する
-    		pauseLocationJudgmentService();
+    		pauseGotochiService();
     	}
     }
+    
     
    //この実装少し不安。別の案を考えたほうがいいかも 
     /**
@@ -118,19 +140,25 @@ public class PrefecturesActivityBase extends Activity{
     	
     	ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
     	for(RunningTaskInfo info : am.getRunningTasks(1)) {
-    		return info.baseActivity.getClassName().equals(EntranceActivityClassName) && 
-    			info.baseActivity.getPackageName().equals(EntranceActivityPackageName);
+    		return info.baseActivity.getClassName().equals(ENTRANCE_ACTIVITY_CLASS_NAME) && 
+    			info.baseActivity.getPackageName().equals(ENTRANCE_ACTIVITY_PACKAGE_NAME);
     	}
     	
     	return false;
     }
     
     @Override protected void onDestroy() {
-		mLocationService = null;
+    	
+    	if(mReceiverRegisterd) {
+    		mReceiverRegisterd = false;
+	    	unregisterReceiver(mReceiver);
+    	}
+    	
+		mGotochiService = null;
 		unbindService(mConnection);
 		
 		if(isFinishSelfApps()) {
-			stopLocationJudgmentService();
+			stopGotochiService();
 		}
 		
     	super.onDestroy();
@@ -150,27 +178,43 @@ public class PrefecturesActivityBase extends Activity{
     	return true;
     }
     
-	private void startLocationJudgmentService() {
+    private void onServiceBind() {
+    	try {
+    		//TODO まだ件を移動していないか確かめる
+    		//こんなにシビアにする必要はないのかな？
+    		
+	    	IntentFilter filter = new IntentFilter(RootBroadcastReceiver.LOCATION_CHANGE_ACTION);
+	    	filter.setPriority(mGotochiService.getActivityNumber());
+	    	registerReceiver(mReceiver, filter);
+	    	
+	    	mReceiverRegisterd = true;
+    	}catch(RemoteException e) {
+			//TODO どうしよう 再起動かな
+			e.printStackTrace();
+    	}
+    }
+    
+	private void startGotochiService() {
 		Intent intent = new Intent();
-		intent.setClassName(JudgmentLocalLocationServicePackageName,
-				JudgmentLocalLocationServiceClassName);
+		intent.setClassName(GOTOCHI_SERVICE_PACKAGE_NAME,
+				GOTOCHI_SERVICE_CLASS_NAME);
 		startService(intent);
 		
 		bindService(intent, mConnection, 0);
 	}
 	
-	private void stopLocationJudgmentService() {
+	private void stopGotochiService() {
 		Intent intent = new Intent();
-		intent.setClassName(JudgmentLocalLocationServicePackageName,
-				JudgmentLocalLocationServiceClassName);
+		intent.setClassName(GOTOCHI_SERVICE_PACKAGE_NAME,
+				GOTOCHI_SERVICE_CLASS_NAME);
 		
 		stopService(intent);
 	}
 	
-	private void pauseLocationJudgmentService() {
-		if(mLocationService != null) {
+	private void pauseGotochiService() {
+		if(mGotochiService != null) {
 			try {
-				mLocationService.pause();
+				mGotochiService.pause();
 			}catch(RemoteException e) {
 				//TODO どうしよう。再起動かな
 				e.printStackTrace();
@@ -180,13 +224,12 @@ public class PrefecturesActivityBase extends Activity{
 			//コネクション設立後にすぐポーズをするようにフラグをセット
 			mConnection.setConnectedProcessPause();
 		}
-		
 	}
 	
-	private void restartLocationJudgmentService() {
+	private void restartGotochiService() {
 		try {
-			if(!mLocationService.isRunning()) {
-				mLocationService.restart();
+			if(!mGotochiService.isRunning()) {
+				mGotochiService.restart();
 			}
 		}catch(RemoteException e) {
 			//TODO どうしよう 再起動かな
@@ -194,5 +237,10 @@ public class PrefecturesActivityBase extends Activity{
 		}
 	}
 		
+    /**
+     * どの都道府県のActivityなのかを明示するために、継承先Activityは自分の都道府県コードを示さないといけない
+     * @return Activityの都道府県コード
+     */
+    abstract protected PrefecturesCode getPrefecturesCode();
     
 }

@@ -1,6 +1,7 @@
 package jag.kumamoto.apps.gotochi;
 
-interface IJudgmentLocalLocationService {
+interface IGotochiService{
+	int getActivityNumber();
 	void pause();
 	void restart();
 	boolean isRunning();

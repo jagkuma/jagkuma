@@ -6,12 +6,16 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.os.RemoteException;
 
-public class JudgmentLocalLocationService extends Service{
+public class GotochiService extends Service{
 	
 	private boolean mIsRunning = false;
+	private int mActivityCount = 0;
 	
-	private final IJudgmentLocalLocationService.Stub mJudgmentLocationService = new IJudgmentLocalLocationService.Stub() {
+	private final IGotochiService.Stub mJudgmentLocationService = new IGotochiService.Stub() {
 
+		@Override synchronized public int getActivityNumber() throws RemoteException {
+			return ++mActivityCount;
+		};
 		
 		@Override public void pause() throws RemoteException {
 			onPause();
@@ -33,18 +37,19 @@ public class JudgmentLocalLocationService extends Service{
 	@Override public void onCreate() {
 		super.onCreate();
 		
-		mIsRunning = true;
-		
 		if(!checkDeviceCapabilities()) {
 			mIsRunning = false;
 			return;
 		}
 		
+		mIsRunning = true;
 		//TODO 位置判定モジュールのスタート
 		
 		
 		//TODO 初期位置(起動時の都道府県)をすぐに検索して
 		//一番最初のブロードキャストインテントを投げる
+		//or
+		//ぷリファレンスに保存しておいてそれを取得する
 	}
 	
 	private void onPause() {
@@ -54,13 +59,13 @@ public class JudgmentLocalLocationService extends Service{
 	}
 	
 	private void onRestart() {
-		mIsRunning = true;
 		
 		if(!checkDeviceCapabilities()) {
 			mIsRunning = false;
 			return;
 		}
 		
+		mIsRunning = true;
 		//TODO 位置判定モジュールの再始動
 	}
 	
