@@ -5,15 +5,9 @@ import android.view.View;
 import android.widget.Toast;
 
 public class MainActivity extends PrefecturesActivityBase {
+
 	
-	@Override protected final PrefecturesCode getPrefecturesCode() {
-		return PrefecturesCode.Kumamoto;
-	}
-	
-	
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
+    @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
        setContentView(R.layout.main);

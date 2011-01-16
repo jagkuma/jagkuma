@@ -1,7 +1,7 @@
 package jag.kumamoto.apps.gotochi;
 
 public enum PrefecturesCode {
-	HokkaidoHokkaido(1), 	//北海道
+	Hokkaido(1),						 	//北海道
 	Aomori(2),								//青森県
 	Iwate(3),								//岩手県
 	Miyagi(4),								//宮城県

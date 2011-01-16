@@ -236,11 +236,5 @@ public abstract class PrefecturesActivityBase extends Activity{
 			e.printStackTrace();
 		}
 	}
-		
-    /**
-     * どの都道府県のActivityなのかを明示するために、継承先Activityは自分の都道府県コードを示さないといけない
-     * @return Activityの都道府県コード
-     */
-    abstract protected PrefecturesCode getPrefecturesCode();
     
 }

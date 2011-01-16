@@ -10,9 +10,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 
+/**
+ * デバイス設定が整っていないときにユーザに対し警告を出すためのActivity.<br/>
+ * <br/>
+ * {@link GotochiService}からダイアログを表示するために利用される.<br/>
+ * ダイアログを表示するためだけに利用されるので、Activityは半透明の背景色で子ビューを持たない.
+ * @author aharisu
+ *
+ */
 public class ServiceShowWarningActivity extends Activity{
-	public static final String WARNING_NETWORK_DISABLE = "network";
-	public static final String WARNING_GPS_DISABLE = "gps";
+	public static final String WARNING_NETWORK_DISABLE = "network-warning";
+	public static final String WARNING_GPS_DISABLE = "gps-warning";
 	
 	private boolean mNetworkDisable;
 	private boolean mGPSDisable;

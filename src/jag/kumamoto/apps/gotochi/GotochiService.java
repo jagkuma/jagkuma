@@ -6,6 +6,11 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.os.RemoteException;
 
+/**
+ * ご当地アプリ内で各都道府県アプリに依存しない機能を提供するサービスクラス.
+ * @author aharisu
+ *
+ */
 public class GotochiService extends Service{
 	
 	private boolean mIsRunning = false;
