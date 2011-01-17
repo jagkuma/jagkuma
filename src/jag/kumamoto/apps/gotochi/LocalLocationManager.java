@@ -168,7 +168,12 @@ public final class LocalLocationManager {
 		
 		LocationManager lm = (LocationManager)mContext.getSystemService(Context.LOCATION_SERVICE); 
 		Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-		mLocationListener.onLocationChanged(location);
+		if(location != null) {
+			mCurrentLocation = null;
+			mLocationListener.onLocationChanged(location);
+		} else if(mCurrentLocation != null){
+			mCallback.onLocalLocationChange(mCurrentLocation, null);
+		}
 	}
 	
 	public void restartJudgeLocation() {
