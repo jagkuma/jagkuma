@@ -24,10 +24,20 @@ public class GotochiService extends Service{
 		new LocalLocationManager.OnLocalLocationChangeListener() {
 		
 		@Override public void onLocalLocationChange(PrefecturesCode cur, PrefecturesCode prev) {
-			//TODO インテントを投げる
+			//都道府県を移動したことを通知するブロードキャストインテントを投げる
+			
+			Intent intent = new Intent(RootBroadcastReceiver.LOCATION_CHANGE_ACTION);
+			intent.putExtra(RootBroadcastReceiver.CURRENT_LOCATION, cur);
+			if(prev != null) {
+				intent.putExtra(RootBroadcastReceiver.BEFORE_LOCATION, prev);
+			}
+			
+			GotochiService.this.sendOrderedBroadcast(intent, null);
 		}
 		
-		@Override public void onManagerException() {
+		@Override public void onManagerException(LocalLocationManager.JudgeLocationException e) {
+			//TODO 適切なエラーハンドリング
+			
 			checkDeviceCapabilities();
 		}
 	};

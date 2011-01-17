@@ -11,21 +11,80 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
+/**
+ * 現在位置判定クラス<br/>
+ * <br/>
+ * このクラスを使用するためには、
+ * GPSが有効になっていることと、ネットワークアクセスが可能である必要がある。
+ * @author aharisu
+ *
+ */
 public final class LocalLocationManager {
+	
+	/**
+	 * 都道府県を移動したときに呼ばれるイベントリスナ<br/>
+	 * GPSが無効になった時と、ネットワークアクセスに失敗したときの例外処理通知にも利用する
+	 * @author aharisu
+	 *
+	 */
 	public static interface OnLocalLocationChangeListener {
 		public void onLocalLocationChange(PrefecturesCode cur, PrefecturesCode prev);
-		public void onManagerException();
+		public void onManagerException(JudgeLocationException e);
 	}
 
+	/**
+	 * {@link OnLocalLocationChangeListener}の{@link onManagerException}メソッドで
+	 * 例外を通知するため利用するに例外クラス<br/>
+	 * 
+	 * @author aharisu
+	 *
+	 */
+	public static class JudgeLocationException extends Exception {
+		
+		private static final long serialVersionUID = -4343031233729920193L;
+		
+		
+		/**
+		 * GPSが無効になったことを示す定数
+		 */
+		public static final int EXCEPTION_DISABLE_GPS = 0;
+		
+		/**
+		 * 取得した経緯度から都道府県を取得できなかったことを示す定数
+		 */
+		public static final int EXCEPTION_GET_ADMIN_AREA = 1;
+		
+		/**
+		 * 未知の都道府県だった時の定数
+		 */
+		public static final int EXCEPTION_GET_PREFECTURES_CODE = 2;
+		
+		/**
+		 * ネットワークアクセスが不可能だったときの定数
+		 */
+		public static final int EXCEPTION_IO = 3;
+		
+		public final int errorCode;
+		public final IOException e;
+		
+		public JudgeLocationException(int errorCode) {
+			this.errorCode = errorCode;
+			this.e = null;
+		}
+		
+		public JudgeLocationException(IOException e) {
+			this.errorCode = EXCEPTION_IO;
+			this.e = e;
+		}
+		
+	}
+	
+	
 	private PrefecturesCode mCurrentLocation;
 	private final Context mContext;
 	private boolean mJudgeStart = false;
 	private final Geocoder mGeocoder;
 	private final OnLocalLocationChangeListener mCallback;
-	
-	public LocalLocationManager(Context context, OnLocalLocationChangeListener listener) {
-		this(context, null, listener);
-	}
 	
 	public LocalLocationManager(Context context, PrefecturesCode curLocation, 
 			OnLocalLocationChangeListener listener) {
@@ -36,6 +95,10 @@ public final class LocalLocationManager {
 		mCallback = listener;
 	}
 	
+	/**
+	 * 現在地を取得する。nullの場合もある。
+	 * @return 現在地を示す{@linkplain PrefecturesCode}定数。まだ一度も現在地を取得できていない場合はnull。
+	 */
 	public PrefecturesCode getCurrentPrefecturesCode() {
 		return mCurrentLocation;
 	}
@@ -49,7 +112,8 @@ public final class LocalLocationManager {
 		
 		@Override public void onProviderDisabled(String provider) {
 			if(provider.equals(LocationManager.GPS_PROVIDER)) {
-				mCallback.onManagerException();
+				mCallback.onManagerException(new JudgeLocationException(
+						JudgeLocationException.EXCEPTION_DISABLE_GPS));
 			}
 		}
 		
@@ -66,12 +130,14 @@ public final class LocalLocationManager {
 					}
 				}
 			}catch(IOException e) {
-				mCallback.onManagerException();
+				mCallback.onManagerException(new JudgeLocationException(e));
+			}catch(JudgeLocationException e) {
+				mCallback.onManagerException(e);
 			}
 		}
 	};
 	
-	private String pointToAdminArea(double latitude, double longtitude) throws IOException{
+	private String pointToAdminArea(double latitude, double longtitude) throws IOException, JudgeLocationException{
 		
 		for(Address addr : mGeocoder.getFromLocation(latitude, longtitude, 5)) {
 			String adminArea = addr.getAdminArea();
@@ -80,10 +146,10 @@ public final class LocalLocationManager {
 			}
 		}
 		
-		return null;
+		throw new JudgeLocationException(JudgeLocationException.EXCEPTION_GET_ADMIN_AREA);
 	}
 	
-	private PrefecturesCode adminAreaToPrefecturesCode(String adminArea) {
+	private PrefecturesCode adminAreaToPrefecturesCode(String adminArea) throws JudgeLocationException{
 		if(mCurrentLocation != null && mCurrentLocation.name.equals(adminArea)) {
 			return mCurrentLocation;
 		}
@@ -94,8 +160,7 @@ public final class LocalLocationManager {
 			}
 		}
 		
-		//例外を投げるようにするか？
-		return null;
+		throw new JudgeLocationException(JudgeLocationException.EXCEPTION_GET_PREFECTURES_CODE);
 	}
 	
 	public void startJudgeLocation() {
