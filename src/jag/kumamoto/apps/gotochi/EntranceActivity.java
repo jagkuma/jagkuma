@@ -9,6 +9,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 
@@ -99,15 +102,25 @@ public class EntranceActivity extends Activity{
     	}
     }    
     
-   //この実装少し不安。別の案を考えたほうがいいかも 
+    //インテントフィルタの取得の仕方がわからないので
+    //しょうがなくメタデータを利用する
     /**
      * ご当地アプリのActivityがトップにある(表示されている)かどうかを調べる
      * @return トップにあるならtrue.隠れている場合はfalse
      */
     private boolean isTopSelfApps() {
     	ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
+    	
     	for(RunningTaskInfo info : am.getRunningTasks(1)) {
-    		return getComponentName().compareTo(info.baseActivity) == 0;
+    		try {
+	    		Bundle metaData = getPackageManager()
+		    		.getActivityInfo(info.baseActivity, PackageManager.GET_META_DATA).metaData;
+	    		if(metaData != null)
+	    			return metaData.getBoolean(PrefecturesActivityBase.METADATA_GOTOCHI_APP, false);
+	    		
+    		}catch(NameNotFoundException e) {
+    			//この場合は結果をfalseにするためにここでは何もしない
+    		}
     	}
     	
     	return false;
@@ -127,12 +140,18 @@ public class EntranceActivity extends Activity{
     
     private boolean isFinishSelfApps() {
     	ActivityManager am = (ActivityManager)getSystemService(Context.ACTIVITY_SERVICE);
-    	ComponentName selfName = getComponentName();
-    	
-    	for(RunningTaskInfo info : am.getRunningTasks(Integer.MAX_VALUE)) {
-    		if(selfName.compareTo(info.baseActivity) == 0) {
-    			return info.numRunning == 0;
-    		}
+    	try {
+	    	List<RunningTaskInfo> infoList = am.getRunningTasks(Integer.MAX_VALUE);
+	    	int size = infoList.size();
+	    	for(int i = 0;i < size; ++i) {
+				Bundle metaData = getPackageManager()
+						.getActivityInfo(infoList.get(i).baseActivity, PackageManager.GET_META_DATA).metaData;
+				
+	    		if(metaData != null && metaData.getBoolean(PrefecturesActivityBase.METADATA_GOTOCHI_APP, false))
+	    			return false;
+	    	} 
+    	}catch(NameNotFoundException e) {
+			//この場合は結果をfalseにするためにここでは何もしない
     	}
     	
     	//実行中のタスク一覧になければ終了している
@@ -155,7 +174,7 @@ public class EntranceActivity extends Activity{
 			try {
 				mGotochiService.pause();
 			}catch(RemoteException e) {
-				//TODO どうしよう。再起動かな
+				//どうしよう。再起動かな
 				e.printStackTrace();
 			}
 		} else {
@@ -172,7 +191,7 @@ public class EntranceActivity extends Activity{
 				mGotochiService.restart();
 			}
 		}catch(RemoteException e) {
-			//TODO どうしよう 再起動かな
+			//どうしよう 再起動かな
 			e.printStackTrace();
 		}
 	}

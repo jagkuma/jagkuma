@@ -4,22 +4,33 @@
       android:versionCode="1"
       android:versionName="1.0">
     <application android:icon="@drawable/icon" android:label="@string/app_name" android:debuggable="true">
+		<activity android:name="EntranceActivity">
+		    <intent-filter>
+			    <action android:name="android.intent.action.MAIN" />
+			    <category android:name="android.intent.category.LAUNCHER" />
+		    </intent-filter>
+	        <meta-data android:name="GotochiApp" android:value="true" />
+		</activity>
 	
         <activity android:name=".MainActivity"
                   android:label="@string/app_name">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+	        	<category android:name="android.intent.category.DEFAULT" />
+        		<action android:name="android.intent.action.MAIN" />
+        		<category android:name="jag.gotochi.category.ACTIVITY" />
+	            <data android:scheme="gotochi" android:host="kumamoto" />
+	        </intent-filter>
+	        <meta-data android:name="GotochiApp" android:value="true" />
         </activity>
         
-        <service android:name="GotochiService"></service>
+        <service android:name="GotochiService" android:exported="true"></service>
 
 <activity android:name="ServiceShowWarningActivity" android:theme="@style/ServiceShowWarning"></activity>
 <receiver android:name="RootBroadcastReceiver"><intent-filter><action android:name="jag.kumamoto.apps.gotochi.LOCATION_CHANGE"></action>
 </intent-filter>
 </receiver>
 </application>
+
     <uses-sdk android:minSdkVersion="4" />
 
 <uses-permission android:name="android.permission.GET_TASKS"></uses-permission>
