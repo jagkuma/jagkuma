@@ -310,10 +310,13 @@ public abstract class PrefecturesActivityBase extends Activity{
 	    	List<RunningTaskInfo> infoList = am.getRunningTasks(Integer.MAX_VALUE);
 	    	int size = infoList.size();
 	    	for(int i = 0;i < size; ++i) {
+	    		RunningTaskInfo info = infoList.get(i);
 				Bundle metaData = getPackageManager()
-						.getActivityInfo(infoList.get(i).baseActivity, PackageManager.GET_META_DATA).metaData;
+						.getActivityInfo(info.baseActivity, PackageManager.GET_META_DATA).metaData;
 				
-	    		if(metaData != null && metaData.getBoolean(METADATA_GOTOCHI_APP, false))
+	    		if(metaData != null && 
+	    				metaData.getBoolean(PrefecturesActivityBase.METADATA_GOTOCHI_APP, false) &&
+	    				info.numRunning != 0)
 	    			return false;
 	    	} 
     	}catch(SecurityException e) {
