@@ -5,6 +5,7 @@ import java.util.Locale;
 
 import android.content.Context;
 import android.location.Address;
+import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
@@ -79,6 +80,9 @@ public final class LocalLocationManager {
 		
 	}
 	
+	
+	private static final int LOCATION_UPDATE_MIN_TIME = 1 * 60 * 1000;	//1分より短い間隔では通知されない
+	private static final int LOCATION_UPDATE_MIN_DISTANCE = 5;	//5mより小さい変化の場合は通知されない
 	
 	private PrefecturesCode mCurrentLocation;
 	private final Context mContext;
@@ -185,9 +189,17 @@ public final class LocalLocationManager {
 			mJudgeStart = true;
 			
 			LocationManager lm = (LocationManager)mContext.getSystemService(Context.LOCATION_SERVICE); 
-			lm.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-					0,//TODO 数値を適切な値に修正
-					0,//TODO 数値を適切な値に修正
+			Criteria criteria = new Criteria();
+			criteria.setAccuracy(Criteria.ACCURACY_FINE);
+			criteria.setSpeedRequired(false);		//速度情報は不要
+			criteria.setAltitudeRequired(false);	//高度情報は不要
+			criteria.setBearingRequired(false);	//方位情報は不要
+			
+			String provider = lm.getBestProvider(criteria, true);
+			lm.requestLocationUpdates(
+					provider,
+					LOCATION_UPDATE_MIN_TIME,//TODO 外部から設定できるように
+					LOCATION_UPDATE_MIN_DISTANCE,//TODO 外部から設定できるように
 					mLocationListener);
 		}
 	}

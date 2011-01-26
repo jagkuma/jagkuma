@@ -42,6 +42,7 @@ public class GotochiService extends Service{
 		}
 	};
 	
+	
 	private final IGotochiService.Stub mJudgmentLocationService = new IGotochiService.Stub() {
 
 		@Override synchronized public int getActivityNumber() throws RemoteException {
@@ -65,6 +66,7 @@ public class GotochiService extends Service{
 		return mJudgmentLocationService;
 	}
 	
+	
 	@Override public void onCreate() {
 		super.onCreate();
 		
@@ -74,12 +76,59 @@ public class GotochiService extends Service{
 		}
 		
 		mIsRunning = true;
+		setupLocationModule();
+	}
+
+	
+	private void onPause() {
+		if(mIsRunning) {
+			mIsRunning = false;
+			
+			stopLocationModule();
+		}
+	}
+	
+	
+	private void onRestart() {
 		
+		if(!checkDeviceCapabilities()) {
+			mIsRunning = false;
+			return;
+		}
+		
+		mIsRunning = true;
+		if(mLocalLocationManager == null) {
+			setupLocationModule();
+		} else {
+			//位置判定モジュールの再始動
+			mLocalLocationManager.restartJudgeLocation();
+		}
+	}
+	
+	private void setupLocationModule() {
 		//位置判定モジュールのスタート
 		PrefecturesCode code = getLastKnownLocation();
 		mLocalLocationManager = new LocalLocationManager(this, code, mLocalLocationListener);
 		mLocalLocationManager.startJudgeLocation();
 	}
+	
+	
+	@Override public void onDestroy() {
+		super.onDestroy();
+		
+		if(mIsRunning) {
+			mIsRunning = false;
+			
+			stopLocationModule();
+			putLastKnownLocation(mLocalLocationManager.getCurrentPrefecturesCode());
+			mLocalLocationManager = null;
+		}
+	}
+	
+	private void stopLocationModule() {
+		mLocalLocationManager.stopJudgeLocation();
+	}	
+	
 	
 	private PrefecturesCode getLastKnownLocation() {
 		SharedPreferences pref = getSharedPreferences(PREFERENCES_NAME, MODE_PRIVATE);
@@ -101,45 +150,15 @@ public class GotochiService extends Service{
 		}
 	}
 	
-	private void onPause() {
-		mIsRunning = false;
-		
-		stopLocationModule();
-	}
-	
-	private void onRestart() {
-		
-		if(!checkDeviceCapabilities()) {
-			mIsRunning = false;
-			return;
-		}
-		
-		mIsRunning = true;
-		
-		//位置判定モジュールの再始動
-		mLocalLocationManager.restartJudgeLocation();
-	}
-	
-	@Override public void onDestroy() {
-		super.onDestroy();
-		
-		mIsRunning = false;
-		
-		stopLocationModule();
-		putLastKnownLocation(mLocalLocationManager.getCurrentPrefecturesCode());
-		mLocalLocationManager = null;
-	}
-	
-	private void stopLocationModule() {
-		mLocalLocationManager.stopJudgeLocation();
-	}
 	
 	private boolean checkDeviceCapabilities() {
 		Context context = getApplicationContext();
 		boolean isNetworkConnected = DeviceCapabilitiesChecker.isNetworkConnected(context);
-		boolean gpsEnabled = DeviceCapabilitiesChecker.isRunningGPSService(context);
+		//GPS限定ではなく、位置情報が取得できればなんでもいい
+		//boolean gpsEnabled = DeviceCapabilitiesChecker.isRunningGPSService(context);
+		boolean locationEnabled = DeviceCapabilitiesChecker.isEnableLocationService(context);
 		
-		if(isNetworkConnected && gpsEnabled) {
+		if(isNetworkConnected && locationEnabled) {
 			return true;
 		}
 		
@@ -147,7 +166,8 @@ public class GotochiService extends Service{
 		Intent intent = new Intent(context, ServiceShowWarningActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		intent.putExtra(ServiceShowWarningActivity.WARNING_NETWORK_DISABLE, !isNetworkConnected);
-		intent.putExtra(ServiceShowWarningActivity.WARNING_GPS_DISABLE, !gpsEnabled);
+		intent.putExtra(ServiceShowWarningActivity.WARNING_LOCATION_DISABLE, !locationEnabled);
+		//intent.putExtra(ServiceShowWarningActivity.WARNING_GPS_DISABLE, !gpsEnabled);
 		
 		context.startActivity(intent);
 		

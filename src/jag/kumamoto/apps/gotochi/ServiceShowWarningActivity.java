@@ -21,9 +21,11 @@ import android.widget.TextView;
 public class ServiceShowWarningActivity extends Activity{
 	public static final String WARNING_NETWORK_DISABLE = "network-warning";
 	public static final String WARNING_GPS_DISABLE = "gps-warning";
+	public static final String WARNING_LOCATION_DISABLE = "location-warning"; 
 	
 	private boolean mNetworkDisable;
 	private boolean mGPSDisable;
+	private boolean mLocationDisable;
 	
 	@Override protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -36,6 +38,7 @@ public class ServiceShowWarningActivity extends Activity{
 		
 		mNetworkDisable = extras.getBoolean(WARNING_NETWORK_DISABLE, false);
 		mGPSDisable = extras.getBoolean(WARNING_GPS_DISABLE, false);
+		mLocationDisable = extras.getBoolean(WARNING_LOCATION_DISABLE, false);
 		
 		if(!mNetworkDisable && !mGPSDisable) {
 			finish();
@@ -70,6 +73,10 @@ public class ServiceShowWarningActivity extends Activity{
 			tvwMessage.append(res.getText(R.string.device_cap_gps_disable));
 			tvwMessage.append("\n");
 		}
+		if(mLocationDisable) {
+			tvwMessage.append(res.getText(R.string.device_cap_location_disable));
+			tvwMessage.append("\n");
+		}
 		
 		builder.setView(layout);
 		final Dialog dialog = builder.create();
@@ -80,7 +87,7 @@ public class ServiceShowWarningActivity extends Activity{
 				dialog.dismiss();
 				ServiceShowWarningActivity.this.finish();
 				
-				if(mNetworkDisable&& mGPSDisable) {
+				if(mLocationDisable || mNetworkDisable&& mGPSDisable) {
 					DeviceCapabilitiesChecker.startSettingsActivity(context);
 				} else if(mNetworkDisable) {
 					DeviceCapabilitiesChecker.startWifiSettingsActivity(context);
