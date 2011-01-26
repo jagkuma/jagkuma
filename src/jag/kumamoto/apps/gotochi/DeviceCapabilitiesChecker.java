@@ -41,6 +41,16 @@ public final class DeviceCapabilitiesChecker {
 	}
 	
 	/**
+	 * 位置情報を取得できる状態かを確認する
+	 * @param context
+	 * @return 位置情報を取得可能であればtrue.不可能ならばfalse.
+	 */
+	public static final boolean isEnableLocationService(Context context) {
+		//位置情報取得はGPSが何かネットワークアクセスが可能であればOK
+		return isNetworkConnected(context) || isRunningGPSService(context);
+	}
+	
+	/**
 	 * GPSが有効になっているかを確認する。
 	 * @param context
 	 * @return GPSが有効であればtrue.無効であればfalse.
@@ -64,7 +74,7 @@ public final class DeviceCapabilitiesChecker {
 	}
 	
 	/**
-	 * デバイス設定を変更すアクティビティを起動する
+	 * デバイス設定を変更するアクティビティを起動する
 	 * @param context
 	 */
 	public static void startSettingsActivity(Context context) {

@@ -32,6 +32,7 @@ public final class R {
         public static final int device_cap_dialog_msg=0x7f040006;
         public static final int device_cap_dialog_title=0x7f040005;
         public static final int device_cap_gps_disable=0x7f040008;
+        public static final int device_cap_location_disable=0x7f040009;
         public static final int device_cap_network_disable=0x7f040007;
         public static final int hello=0x7f040000;
         public static final int main_btnAmbition_text=0x7f040002;

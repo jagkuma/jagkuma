@@ -9,4 +9,6 @@
 <string name="device_cap_dialog_msg">以下の問題によってアプリケーションを起動できません</string>
 <string name="device_cap_network_disable">・ネットワーク接続がありません</string>
 <string name="device_cap_gps_disable">・GPSが無効になっています</string>
+<string name="device_cap_location_disable">・位置情報を取得できません</string>
+
 </resources>
